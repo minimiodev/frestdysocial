@@ -1,0 +1,158 @@
+/* ========================================
+   Activity / Notifications Page Styles
+   ======================================== */
+
+.activity-item {
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 15px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    animation: fadeSlideIn 0.3s ease forwards;
+    position: relative;
+    /* Anchor reset */
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+.activity-item:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+}
+
+.activity-item.new-notif {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(59, 130, 246, 0.04);
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInTop {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); max-height: 200px; }
+    to   { opacity: 0; transform: scale(0.96); max-height: 0; padding: 0; margin: 0; }
+}
+
+.activity-item-removing {
+    animation: fadeOut 0.3s ease forwards;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.activity-icon-badge {
+    position: absolute;
+    bottom: -3px; right: -3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    border: 2px solid var(--bg-secondary);
+}
+
+/* Dismiss (×) button per notification */
+.dismiss-notif-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.18s;
+    flex-shrink: 0;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.activity-item:hover .dismiss-notif-btn {
+    opacity: 1;
+}
+
+.dismiss-notif-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+}
+
+/* Clear-all button */
+.clear-activity-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(239,68,68,0.08);
+    color: var(--danger, #ef4444);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-body);
+}
+
+.clear-activity-btn:hover {
+    background: rgba(239,68,68,0.18);
+    border-color: rgba(239,68,68,0.6);
+}
+
+.clear-activity-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* SSE Connection status indicator */
+.sse-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    transition: all 0.3s;
+}
+
+.sse-status .sse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+
+.sse-status.connected .sse-dot {
+    background: #10b981;
+    animation: pulse 2s infinite;
+}
+
+.sse-status.reconnecting .sse-dot {
+    background: #f59e0b;
+    animation: pulse 1s infinite;
+}
+
+.sse-status.error .sse-dot {
+    background: #ef4444;
+}

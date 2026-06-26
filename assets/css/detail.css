@@ -1,0 +1,111 @@
+/* ── Reply card edit/delete menu ── */
+.reply-card {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+}
+.reply-card:last-child { border-bottom: none; }
+
+.reply-menu-container {
+    position: relative;
+    display: inline-block;
+}
+.reply-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+}
+.reply-card:hover .reply-menu-btn { opacity: 1; }
+.reply-menu-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+.reply-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 200;
+    min-width: 140px;
+    overflow: hidden;
+}
+.reply-dropdown.open { display: block; }
+
+.reply-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background 0.15s;
+    user-select: none;
+}
+.reply-dropdown-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.reply-dropdown-item.delete-item:hover { background: rgba(239,68,68,0.1); color: var(--danger); }
+
+/* ── Inline edit textarea ── */
+.reply-edit-area {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+.reply-edit-area.active { display: flex; }
+.reply-edit-area textarea {
+    width: 100%;
+    min-height: 72px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-family: var(--font-body);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+    line-height: 1.5;
+}
+.reply-edit-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.reply-edit-actions button {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-save-reply {
+    background: var(--accent);
+    color: #fff;
+}
+.btn-save-reply:hover { filter: brightness(1.1); }
+.btn-cancel-reply {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color) !important;
+}
+.btn-cancel-reply:hover { color: var(--text-primary); }
+
+/* ── edited badge ── */
+.edited-badge {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 4px;
+}

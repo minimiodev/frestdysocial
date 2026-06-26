@@ -1,0 +1,41 @@
+# Ngăn duyệt danh sách tệp và thư mục (Directory Listing)
+Options -Indexes
+
+# Ngăn thực thi mã PHP và các mã kịch bản khác trong thư mục uploads
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phtm|pl|py|cgi|asp|aspx|sh|shtml)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Trường hợp nếu máy chủ vẫn cố tải file PHP, ép buộc tải về dưới dạng file tĩnh thay vì thực thi
+<Files *.php>
+    ForceType application/octet-stream
+    Header set Content-Disposition attachment
+</Files>
+
+# Cấu hình MIME type cho video và audio để đảm bảo trình duyệt có thể phát trực tiếp
+AddType video/mp4 .mp4
+AddType video/webm .webm
+AddType video/ogg .ogv
+AddType video/quicktime .mov
+AddType audio/mpeg .mp3
+AddType audio/ogg .ogg
+AddType audio/wav .wav
+AddType audio/x-m4a .m4a
+
+# BẮT BUỘC: Hỗ trợ Range Requests để browser có thể tua và phát video
+# Không có điều này, browser sẽ báo lỗi "format not supported"
+<IfModule mod_headers.c>
+    Header set Accept-Ranges bytes
+    
+    # Cache cho media tĩnh (1 năm)
+    <FilesMatch "\.(mp4|webm|mov|ogv|mp3|ogg|wav|m4a|jpg|jpeg|png|gif|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+        Header set X-Content-Type-Options "nosniff"
+    </FilesMatch>
+</IfModule>
+
+# Bật gzip cho text files, KHÔNG nén video/audio (đã nén sẵn)
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>

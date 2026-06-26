@@ -1,0 +1,527 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                         Int                  @id @default(autoincrement())
+  username                   String               @unique @db.VarChar(100)
+  fullName                   String               @default("") @map("full_name") @db.VarChar(100)
+  firstName                  String               @default("") @map("first_name") @db.VarChar(50)
+  middleName                 String               @default("") @map("middle_name") @db.VarChar(50)
+  lastName                   String               @default("") @map("last_name") @db.VarChar(50)
+  nameDisplayOrder           String               @default("last_middle_first") @map("name_display_order") @db.VarChar(30)
+  displayNameLastUpdated     DateTime?            @map("display_name_last_updated")
+  usernameLastUpdated        DateTime?            @map("username_last_updated")
+  pendingFirstName           String?              @map("pending_first_name") @db.VarChar(50)
+  pendingMiddleName          String?              @map("pending_middle_name") @db.VarChar(50)
+  pendingLastName            String?              @map("pending_last_name") @db.VarChar(50)
+  pendingNameDisplayOrder    String?              @map("pending_name_display_order") @db.VarChar(30)
+  nameChangeStatus           String               @default("none") @map("name_change_status") @db.VarChar(20)
+  passwordHash               String               @map("password_hash") @db.VarChar(255)
+  email                      String               @unique @db.VarChar(255)
+  avatarFilename             String               @default("avatar_default.png") @map("avatar_filename") @db.VarChar(255)
+  bio                        String               @default("") @db.VarChar(255)
+  isPrivate                  Boolean              @default(false) @map("is_private")
+  showNsfw                   Boolean              @default(false) @map("show_nsfw")
+  isAdult                    Boolean              @default(false) @map("is_adult")
+  dob                        DateTime?            @db.Date
+  idProofFilename            String?              @map("id_proof_filename") @db.VarChar(255)
+  ageVerificationStatus      String               @default("unverified") @map("age_verification_status") @db.VarChar(30)
+  resetToken                 String?              @map("reset_token") @db.VarChar(255)
+  resetTokenExpires          DateTime?            @map("reset_token_expires")
+  activityDismissedAt        DateTime?            @map("activity_dismissed_at")
+  qrResetAt                  DateTime?            @map("qr_reset_at")
+  verificationType           String?              @map("verification_type") @db.VarChar(30)
+  phoneNumber                String?              @map("phone_number") @db.VarChar(30)
+  showEmail                  Boolean              @default(true) @map("show_email")
+  showPhone                  Boolean              @default(true) @map("show_phone")
+  showGender                 Boolean              @default(true) @map("show_gender")
+  showWorkplace              Boolean              @default(true) @map("show_workplace")
+  showLivesAt                Boolean              @default(true) @map("show_lives_at")
+  showCountry                Boolean              @default(true) @map("show_country")
+  showDob                    Boolean              @default(true) @map("show_dob")
+  phoneVerified              Boolean              @default(true) @map("phone_verified")
+  phoneVerificationCode      String?              @map("phone_verification_code") @db.VarChar(10)
+  gender                     String?              @db.VarChar(30)
+  workplace                  String?              @db.VarChar(255)
+  livesAt                    String?              @map("lives_at") @db.VarChar(255)
+  country                    String?              @db.VarChar(100)
+  status                     String               @default("active") @db.VarChar(30)
+  statusReason               String?              @map("status_reason") @db.Text
+  lockUntil                  DateTime?            @map("lock_until")
+  lastActive                 DateTime?            @map("last_active")
+  createdAt                  DateTime             @default(now()) @map("created_at")
+  
+  // Page migration attributes on users table (from db_upgrade.php)
+  isPage                     Boolean              @default(false) @map("is_page")
+  pageCategory               String?              @map("page_category") @db.VarChar(100)
+  syncTransparencyStatus     Boolean              @default(true) @map("sync_transparency_status")
+
+  // Relations
+  posts                      Post[]               @relation("UserPosts")
+  replies                    Reply[]
+  reactions                  Reaction[]
+  followers                  Follow[]             @relation("FollowedUser")
+  following                  Follow[]             @relation("FollowingUser")
+  messagesSent               Message[]            @relation("MessageSender")
+  chatGroupsCreated          ChatGroup[]          @relation("GroupCreator")
+  chatGroupMemberships       ChatGroupMember[]
+  stories                    Story[]
+  storyViews                 StoryView[]
+  storyReactions             StoryReaction[]
+  blocksMade                 Block[]              @relation("Blocker")
+  blocksReceived             Block[]              @relation("Blocked")
+  reportsFiled               Report[]             @relation("Reporter")
+  reportsAgainst             Report[]             @relation("ReportedUser")
+  notificationsReceived      Notification[]       @relation("NotificationUser")
+  notificationsTriggered     Notification[]       @relation("NotificationSender")
+  bookmarks                  Bookmark[]
+  pollVotes                  PollVote[]
+  nameHistory                NameHistory[]
+  loginHistory               LoginHistory[]
+  wikiMoods                  WikiMood[]
+  
+  // Owned Pages
+  pagesOwned                 Page[]               @relation("PageOwner")
+  pageFollows                PageFollow[]
+
+  @@map("users")
+}
+
+model Page {
+  id               Int          @id @default(autoincrement())
+  ownerId          Int          @map("owner_id")
+  pageName         String       @map("page_name") @db.VarChar(100)
+  pageUsername     String       @unique @map("page_username") @db.VarChar(100)
+  avatarFilename   String       @default("avatar_default.png") @map("avatar_filename") @db.VarChar(255)
+  coverFilename    String?      @map("cover_filename") @db.VarChar(255)
+  bio              String       @default("") @db.VarChar(255)
+  category         String       @default("Cộng đồng") @db.VarChar(100)
+  isVerified       Boolean      @default(false) @map("is_verified")
+  verificationType String?      @map("verification_type") @db.VarChar(30)
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  owner            User         @relation("PageOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  posts            Post[]       @relation("PagePosts")
+  followers        PageFollow[]
+
+  @@map("pages")
+}
+
+model PageFollow {
+  userId    Int      @map("user_id")
+  pageId    Int      @map("page_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pageId])
+  @@map("page_follows")
+}
+
+model Post {
+  id                   Int          @id @default(autoincrement())
+  userId               Int          @map("user_id")
+  content              String       @db.Text
+  imageFilename        String?      @map("image_filename") @db.Text
+  videoFilename        String?      @map("video_filename") @db.VarChar(255)
+  audioFilename        String?      @map("audio_filename") @db.VarChar(255)
+  documentFilename     String?      @map("document_filename") @db.VarChar(255)
+  softwareFilename     String?      @map("software_filename") @db.VarChar(255)
+  allowDownload        Boolean      @default(true) @map("allow_download")
+  isCopyrightViolation Boolean      @default(false) @map("is_copyright_violation")
+  copyrightOwner       String?      @map("copyright_owner") @db.VarChar(255)
+  copyrightDetails     String?      @map("copyright_details") @db.Text
+  isNsfw               Boolean      @default(false) @map("is_nsfw")
+  repostOfPostId       Int?         @map("repost_of_post_id")
+  pageId               Int?         @map("page_id")
+  linkPreviewUrl       String?      @map("link_preview_url") @db.VarChar(2048)
+  linkPreviewTitle     String?      @map("link_preview_title") @db.VarChar(512)
+  linkPreviewDesc      String?      @map("link_preview_desc") @db.VarChar(1024)
+  linkPreviewImage     String?      @map("link_preview_image") @db.VarChar(2048)
+  isPinned             Boolean      @default(false) @map("is_pinned")
+  postToken            String?      @unique @map("post_token") @db.VarChar(32)
+  createdAt            DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  user                 User         @relation("UserPosts", fields: [userId], references: [id], onDelete: Cascade)
+  page                 Page?        @relation("PagePosts", fields: [pageId], references: [id], onDelete: Cascade)
+  repostOf             Post?        @relation("Reposts", fields: [repostOfPostId], references: [id], onDelete: Cascade)
+  reposts              Post[]       @relation("Reposts")
+  replies              Reply[]
+  reactions            Reaction[]
+  bookmarks            Bookmark[]
+  reports              Report[]     @relation("ReportedPost")
+  polls                Poll[]
+  hashtags             PostHashtag[]
+
+  @@map("posts")
+}
+
+model Reply {
+  id            Int        @id @default(autoincrement())
+  postId        Int        @map("post_id")
+  userId        Int        @map("user_id")
+  content       String     @db.Text
+  parentReplyId Int?       @map("parent_reply_id")
+  updatedAt     DateTime?  @map("updated_at")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  post          Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentReply   Reply?     @relation("ReplyChildren", fields: [parentReplyId], references: [id], onDelete: Cascade)
+  childReplies  Reply[]    @relation("ReplyChildren")
+  reactions     Reaction[]
+  reports       Report[]   @relation("ReportedReply")
+
+  @@map("replies")
+}
+
+model Reaction {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  postId       Int?     @map("post_id")
+  replyId      Int?     @map("reply_id")
+  reactionType String   @default("like") @map("reaction_type") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post         Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reply        Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@map("reactions")
+}
+
+model Follow {
+  followerId Int      @map("follower_id")
+  followedId Int      @map("followed_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  follower   User     @relation("FollowingUser", fields: [followerId], references: [id], onDelete: Cascade)
+  followed   User     @relation("FollowedUser", fields: [followedId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followedId])
+  @@map("follows")
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  email        String?  @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("admins")
+}
+
+model Setting {
+  keyName  String  @id @map("key_name") @db.VarChar(50)
+  keyValue String? @map("key_value") @db.Text
+
+  @@map("settings")
+}
+
+model CopyrightComplaint {
+  id               Int      @id @default(autoincrement())
+  reporterName     String   @map("reporter_name") @db.VarChar(100)
+  reporterEmail    String   @map("reporter_email") @db.VarChar(100)
+  reporterPhone    String?  @map("reporter_phone") @db.VarChar(30)
+  postUrl          String   @map("post_url") @db.VarChar(2048)
+  description      String   @db.Text
+  evidenceFilename String?  @map("evidence_filename") @db.VarChar(255)
+  status           String   @default("pending") @db.VarChar(30)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("copyright_complaints")
+}
+
+model Message {
+  id            Int       @id @default(autoincrement())
+  senderType    String    @default("user") @map("sender_type") @db.VarChar(20) // "user" or "page"
+  senderId      Int       @map("sender_id")
+  receiverType  String    @map("receiver_type") @db.VarChar(20) // "user" or "group"
+  receiverId    Int       @map("receiver_id")
+  messageText   String?   @map("message_text") @db.Text
+  mediaFilename String?   @map("media_filename") @db.VarChar(255)
+  mediaType     String?   @map("media_type") @db.VarChar(50)
+  isRead        Boolean   @default(false) @map("is_read")
+  recalled      Boolean   @default(false) @map("is_recalled")
+  isEdited      Boolean   @default(false) @map("is_edited")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  sender        User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  reactions     MessageReaction[]
+
+  @@map("messages")
+}
+
+model MessageReaction {
+  id           Int      @default(autoincrement())
+  messageId    Int      @map("message_id")
+  reactorType  String   @default("user") @map("reactor_type") @db.VarChar(20) // "user" or "page"
+  reactorId    Int      @map("reactor_id")
+  reactionEmoji String   @map("reaction_emoji") @db.VarChar(10)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  message      Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, reactorType, reactorId])
+  @@map("message_reactions")
+}
+
+model ChatGroup {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(150)
+  avatarFilename String   @default("group_default.png") @map("avatar_filename") @db.VarChar(255)
+  description    String?  @db.Text
+  creatorType    String   @map("creator_type") @db.VarChar(20) // "user" or "page"
+  creatorId      Int      @map("creator_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  creator        User     @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members        ChatGroupMember[]
+
+  @@map("chat_groups")
+}
+
+model ChatGroupMember {
+  groupId    Int      @map("group_id")
+  memberType String   @map("member_type") @db.VarChar(20) // "user" or "page"
+  memberId   Int      @map("member_id")
+  role       String   @default("member") @db.VarChar(30)
+  joinedAt   DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  group      ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, memberType, memberId])
+  @@map("chat_group_members")
+}
+
+model Poll {
+  id        Int          @id @default(autoincrement())
+  postId    Int          @map("post_id")
+  question  String       @db.VarChar(255)
+  expiresAt DateTime?    @map("expires_at")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  options   PollOption[]
+  votes     PollVote[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id         Int        @id @default(autoincrement())
+  pollId     Int        @map("poll_id")
+  optionText String     @map("option_text") @db.VarChar(150)
+
+  // Relations
+  poll       Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes      PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id        Int        @id @default(autoincrement())
+  pollId    Int        @map("poll_id")
+  optionId  Int        @map("option_id")
+  userId    Int        @map("user_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Relations
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("bookmarks")
+}
+
+model Hashtag {
+  id        Int           @id @default(autoincrement())
+  tag       String        @unique @db.VarChar(100)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  posts     PostHashtag[]
+
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  postId    Int      @map("post_id")
+  hashtagId Int      @map("hashtag_id")
+
+  // Relations
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@map("post_hashtags")
+}
+
+model WikiMood {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  content   String   @db.VarChar(200)
+  emoji     String   @db.VarChar(30)
+  color     String   @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wiki_moods")
+}
+
+model Story {
+  id            Int             @id @default(autoincrement())
+  userId        Int             @map("user_id")
+  mediaFilename String          @map("media_filename") @db.VarChar(255)
+  mediaType     String          @map("media_type") @db.VarChar(50) // "image" or "video"
+  caption       String?         @db.VarChar(255)
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views         StoryView[]
+  reactions     StoryReaction[]
+
+  @@map("stories")
+}
+
+model StoryView {
+  id       Int      @id @default(autoincrement())
+  storyId  Int      @map("story_id")
+  viewerId Int      @map("viewer_id")
+  viewedAt DateTime @default(now()) @map("viewed_at")
+
+  // Relations
+  story    Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer   User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@map("story_views")
+}
+
+model StoryReaction {
+  id           Int      @id @default(autoincrement())
+  storyId      Int      @map("story_id")
+  userId       Int      @map("user_id")
+  reactionType String   @map("reaction_type") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  story        Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("story_reactions")
+}
+
+model Block {
+  blockerId Int      @map("blocker_id")
+  blockedId Int      @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@map("blocks")
+}
+
+model Report {
+  id             Int      @id @default(autoincrement())
+  reporterId     Int      @map("reporter_id")
+  reportedUserId Int?     @map("reported_user_id")
+  reportedPostId Int?     @map("reported_post_id")
+  reportedReplyId Int?    @map("reported_reply_id")
+  reason         String   @db.VarChar(255)
+  details        String?  @db.Text
+  status         String   @default("pending") @db.VarChar(30)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  reporter       User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reportedPost   Post?    @relation("ReportedPost", fields: [reportedPostId], references: [id], onDelete: Cascade)
+  reportedReply  Reply?   @relation("ReportedReply", fields: [reportedReplyId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model NameHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  oldName   String   @map("old_name") @db.VarChar(255)
+  newName   String   @map("new_name") @db.VarChar(255)
+  changedAt DateTime @default(now()) @map("changed_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("name_history")
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  ipAddress String   @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.VarChar(255)
+  loginAt   DateTime @default(now()) @map("login_at")
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_history")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  senderId  Int?     @map("sender_id")
+  type      String   @db.VarChar(50) // "like", "reply", "follow", "chat", etc.
+  targetId  Int?     @map("target_id")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User     @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  sender    User?    @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
