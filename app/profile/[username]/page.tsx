@@ -6,6 +6,7 @@ import PostCard from "@/components/PostCard";
 import AvatarImage from "@/components/AvatarImage";
 import Link from "next/link";
 import ProfileClient from "./ProfileClient"; // Tạo component client-side phụ trợ để xử lý settings & state tabs
+import { getMediaUrl } from "@/lib/utils";
 
 interface ProfilePageProps {
   params: {
@@ -118,20 +119,31 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <div className="space-y-6">
       {/* Profile Header Card */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl overflow-hidden shadow-premium">
-        {/* Cover Photo Mock */}
-        <div className="h-44 bg-gradient-to-r from-primary/30 via-accent-purple/20 to-accent-pink/30 relative" />
+        {/* Cover Photo */}
+        <div className="h-44 bg-gradient-to-r from-primary/30 via-accent-purple/20 to-accent-pink/30 relative overflow-hidden">
+          {profileUser.coverFilename && (
+            <img 
+              src={profileUser.coverFilename.startsWith("http") ? profileUser.coverFilename : `/uploads/covers/${profileUser.coverFilename}`} 
+              alt={`${profileUser.fullName} Cover`} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
+        </div>
 
         {/* User Meta info */}
         <div className="px-6 pb-6 relative flex flex-col md:flex-row items-center md:items-end justify-between -mt-10 gap-4">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
             <AvatarImage
-              src={`/uploads/avatars/${profileUser.avatarFilename}`}
+              src={profileUser.avatarFilename}
               alt={profileUser.fullName}
               className="w-28 h-28 rounded-2xl object-cover border-4 border-[var(--card-bg)] shadow-md z-10"
             />
             <div className="mb-2">
               <div className="flex items-center justify-center md:justify-start gap-1.5">
-                <h2 className="text-xl font-extrabold">{profileUser.fullName}</h2>
+                <h2 className="text-xl font-extrabold text-gray-800 dark:text-gray-200">{profileUser.fullName}</h2>
                 {profileUser.verificationType === "official" && (
                   <svg className="w-5 h-5 inline-block shrink-0" viewBox="0 0 24 24" title="Đã xác minh">
                     <g fillRule="evenodd" transform="translate(-92)">
@@ -165,9 +177,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <div className="mb-2">
             {isOwnProfile ? (
               <div className="flex gap-2">
-                <span className="text-[10px] bg-primary/10 text-primary font-bold uppercase px-3 py-1.5 rounded-xl border border-primary/20">
-                  Tài khoản của bạn
-                </span>
+                <Link
+                  href="/settings?tab=profile"
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow-premium"
+                >
+                  Chỉnh sửa hồ sơ
+                </Link>
               </div>
             ) : currentUser ? (
               <ProfileClient isFollowing={isFollowing} targetUsername={profileUser.username} isSetting={false} />

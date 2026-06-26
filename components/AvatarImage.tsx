@@ -1,5 +1,7 @@
 "use client";
 
+import { getMediaUrl } from "@/lib/utils";
+
 interface AvatarImageProps {
   src: string;
   alt: string;
@@ -13,9 +15,11 @@ export default function AvatarImage({
   className = "",
   fallback = "/assets/images/icons/icon-192x192.png",
 }: AvatarImageProps) {
+  const resolvedSrc = src && src.includes("http") ? src.substring(src.indexOf("http")) : getMediaUrl(src, "avatar");
+
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       className={className}
       onError={(e) => {
@@ -25,3 +29,4 @@ export default function AvatarImage({
     />
   );
 }
+

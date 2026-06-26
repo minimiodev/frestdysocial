@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
         fullName: user.fullName,
         email: user.email,
         avatarFilename: user.avatarFilename,
+        coverFilename: user.coverFilename,
         bio: user.bio,
         isPrivate: user.isPrivate,
         showNsfw: user.showNsfw,

@@ -37,7 +37,9 @@ export default function SettingsPage() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [showNsfw, setShowNsfw] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Password Form States
   const [currentPassword, setCurrentPassword] = useState("");
@@ -60,6 +62,7 @@ export default function SettingsPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const idInputRef = useRef<HTMLInputElement>(null);
 
   // 1. Fetch user data
@@ -81,6 +84,7 @@ export default function SettingsPage() {
         setIsPrivate(u.isPrivate || false);
         setShowNsfw(u.showNsfw || false);
         setAvatarUrl(u.avatarFilename || "");
+        setCoverUrl(u.coverFilename || "");
         setDob(u.dob ? u.dob.split("T")[0] : "");
       })
       .catch(() => {
@@ -137,6 +141,40 @@ export default function SettingsPage() {
       showNotification("error", "Không thể kết nối máy chủ.");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Upload cover R2
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingCover(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoverUrl(data.url);
+        // Lưu trực tiếp cover mới
+        await fetch("/api/users/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "profile", coverFilename: data.url }),
+        });
+        showNotification("success", "Cập nhật ảnh bìa thành công!");
+      } else {
+        showNotification("error", "Lỗi tải ảnh bìa lên Cloudflare R2.");
+      }
+    } catch (err) {
+      showNotification("error", "Không thể kết nối máy chủ.");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -402,38 +440,86 @@ export default function SettingsPage() {
         {/* Tab 1: Profile Details */}
         {activeTab === "profile" && (
           <form onSubmit={handleSaveProfile} className="space-y-5">
-            {/* Avatar block */}
-            <div className="flex items-center gap-4 border-b border-[var(--card-border)] pb-5">
-              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                <img
-                  src={avatarUrl.startsWith("http") ? avatarUrl : `/uploads/avatars/${avatarUrl}`}
-                  alt="Avatar"
-                  className="w-16 h-16 rounded-2xl object-cover ring-2 ring-gray-100 dark:ring-[#202024]"
-                  onError={(e) => {
-                    e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
-                  }}
-                />
-                <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="w-4.5 h-4.5" />
+            {/* Cover & Avatar upload block */}
+            <div className="border-b border-[var(--card-border)] pb-6">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">
+                Ảnh đại diện và Ảnh bìa
+              </label>
+              
+              {/* Cover Photo */}
+              <div 
+                className="h-36 w-full rounded-2xl bg-gradient-to-r from-primary/30 via-accent-purple/20 to-accent-pink/30 relative overflow-hidden group cursor-pointer border border-[var(--card-border)]"
+                onClick={() => coverInputRef.current?.click()}
+              >
+                {coverUrl && (
+                  <img 
+                    src={coverUrl.startsWith("http") ? coverUrl : `/uploads/covers/${coverUrl}`} 
+                    alt="Cover" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+                  <Camera className="w-5 h-5" />
+                  <span className="text-xs font-bold">Thay đổi ảnh bìa</span>
                 </div>
-                {uploading && (
-                  <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center text-primary">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                {uploadingCover && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-primary">
+                    <Loader2 className="w-6 h-6 animate-spin" />
                   </div>
                 )}
               </div>
               <input
                 type="file"
-                ref={fileInputRef}
-                onChange={handleAvatarUpload}
+                ref={coverInputRef}
+                onChange={handleCoverUpload}
                 accept="image/*"
                 className="hidden"
               />
-              <div>
-                <h4 className="font-extrabold text-sm">{fullName}</h4>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                  {uploading ? "Đang tải R2..." : "Click ảnh đại diện để thay đổi"}
-                </p>
+
+              {/* Avatar Photo (Overlapping) */}
+              <div className="flex items-end gap-4 px-4 -mt-10 relative z-10">
+                <div 
+                  className="relative group cursor-pointer" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  <img
+                    src={avatarUrl.startsWith("http") ? avatarUrl : `/uploads/avatars/${avatarUrl}`}
+                    alt="Avatar"
+                    className="w-20 h-20 rounded-2xl object-cover border-4 border-[var(--card-bg)] shadow-md ring-2 ring-gray-100/10"
+                    onError={(e) => {
+                      e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-4.5 h-4.5" />
+                  </div>
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center text-primary">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <div className="mb-2">
+                  <h4 className="font-extrabold text-sm flex items-center gap-1.5 text-gray-800 dark:text-gray-200">
+                    <span>{fullName}</span>
+                  </h4>
+                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                    {uploading ? "Đang tải ảnh đại diện..." : uploadingCover ? "Đang tải ảnh bìa..." : "Nhấp vào ảnh để thay đổi"}
+                  </p>
+                </div>
               </div>
             </div>
 

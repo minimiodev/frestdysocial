@@ -26,6 +26,7 @@ model User {
   passwordHash               String               @map("password_hash") @db.VarChar(255)
   email                      String               @unique @db.VarChar(255)
   avatarFilename             String               @default("avatar_default.png") @map("avatar_filename") @db.VarChar(255)
+  coverFilename              String?              @map("cover_filename") @db.VarChar(255)
   bio                        String               @default("") @db.VarChar(255)
   isPrivate                  Boolean              @default(false) @map("is_private")
   showNsfw                   Boolean              @default(false) @map("show_nsfw")

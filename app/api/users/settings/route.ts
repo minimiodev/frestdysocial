@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { 
       action, // "profile", "password", "name_request", "age_verification"
       // Profile fields
-      fullName, bio, livesAt, country, workplace, gender, isPrivate, showNsfw, avatarFilename,
+      fullName, bio, livesAt, country, workplace, gender, isPrivate, showNsfw, avatarFilename, coverFilename,
       // Password fields
       currentPassword, newPassword,
       // Name request fields
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
           isPrivate: isPrivate !== undefined ? !!isPrivate : user.isPrivate,
           showNsfw: showNsfw !== undefined ? !!showNsfw : user.showNsfw,
           avatarFilename: avatarFilename !== undefined ? avatarFilename.trim() : user.avatarFilename,
+          coverFilename: coverFilename !== undefined ? coverFilename.trim() : user.coverFilename,
         },
       });
 

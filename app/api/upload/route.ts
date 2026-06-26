@@ -4,15 +4,6 @@ import { uploadToR2 } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
-// Tăng giới hạn body size lên 50MB cho route này
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: "50mb",
-    sizeLimit: "50mb",
-  },
-};
-
 export async function POST(req: NextRequest) {
   try {
     // 1. Xác thực người dùng
