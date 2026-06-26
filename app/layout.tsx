@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { SWRConfig } from "swr";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -104,22 +105,24 @@ export default async function RootLayout({
   return (
     <html lang="vi" className="dark">
       <body className={`${inter.className} min-h-screen flex`}>
-        {/* Sidebar */}
-        <Sidebar currentUser={currentUser} isAdmin={isAdmin} />
+        <SWRConfig value={{ revalidateOnFocus: false, revalidateOnReconnect: false, dedupingInterval: 4000 }}>
+          {/* Sidebar */}
+          <Sidebar currentUser={currentUser} isAdmin={isAdmin} />
 
-        {/* Content Container */}
-        <div className="flex-1 md:ml-[var(--sidebar-width)] flex flex-col min-h-screen pb-16 md:pb-0">
-          {/* Header */}
-          <Header currentIdentity={currentIdentity} myPages={myPages} />
+          {/* Content Container */}
+          <div className="flex-1 md:ml-[var(--sidebar-width)] flex flex-col min-h-screen pb-16 md:pb-0">
+            {/* Header */}
+            <Header currentIdentity={currentIdentity} myPages={myPages} />
 
-          {/* Main Area */}
-          <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
-            {children}
-          </main>
-        </div>
+            {/* Main Area */}
+            <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
+              {children}
+            </main>
+          </div>
 
-        {/* Bottom Navigation for Mobile */}
-        <BottomNav />
+          {/* Bottom Navigation for Mobile */}
+          <BottomNav />
+        </SWRConfig>
       </body>
     </html>
   );
