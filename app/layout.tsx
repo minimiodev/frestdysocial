@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "@/app/globals.css";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import BottomNav from "@/components/BottomNav";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -107,7 +108,7 @@ export default async function RootLayout({
         <Sidebar currentUser={currentUser} isAdmin={isAdmin} />
 
         {/* Content Container */}
-        <div className="flex-1 md:ml-[var(--sidebar-width)] flex flex-col min-h-screen">
+        <div className="flex-1 md:ml-[var(--sidebar-width)] flex flex-col min-h-screen pb-16 md:pb-0">
           {/* Header */}
           <Header currentIdentity={currentIdentity} myPages={myPages} />
 
@@ -116,6 +117,9 @@ export default async function RootLayout({
             {children}
           </main>
         </div>
+
+        {/* Bottom Navigation for Mobile */}
+        <BottomNav />
       </body>
     </html>
   );

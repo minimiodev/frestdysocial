@@ -2,7 +2,19 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Send, Image, Plus, MoreVertical, MessageSquare, Users, Phone, Video } from "lucide-react";
+import { 
+  Send, 
+  Image, 
+  Plus, 
+  MoreVertical, 
+  MessageSquare, 
+  Users, 
+  Phone, 
+  Video, 
+  ArrowLeft,
+  X,
+  PlusCircle
+} from "lucide-react";
 
 export default function ChatPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -13,6 +25,13 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // States cho modal tạo nhóm
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupDesc, setGroupDesc] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [allSystemUsers, setAllSystemUsers] = useState<any[]>([]);
+
   // 1. Fetch user data
   useEffect(() => {
     fetch("/api/auth/me")
@@ -22,7 +41,6 @@ export default function ChatPage() {
       })
       .then((data) => {
         setCurrentUser(data.user);
-        // Load danh sách bạn bè/group sau khi có user
         loadConversations(data.user.id);
       })
       .catch(() => {
@@ -30,32 +48,31 @@ export default function ChatPage() {
       });
   }, []);
 
-  // 2. Tải danh sách hội thoại
+  // 2. Tải danh sách hội thoại từ DB
   const loadConversations = async (userId: number) => {
     try {
-      // Fetch các groups
+      // Fetch các groups từ API thực tế
       const groupsRes = await fetch("/api/chat/groups");
       const groupsData = await groupsRes.json();
       
-      // Fetch danh sách users khác để chat cá nhân (seed data từ database)
-      // Để đơn giản, ta mock danh sách hội thoại cá nhân dựa trên user hoạt động
-      const mockUsers = [
-        { id: 1001, type: "user", name: "Nguyễn Hoàng Dũng", username: "hoangdung", avatar: "avatar_hoangdung.png" },
-        { id: 1002, type: "user", name: "Lê Anh Tuấn", username: "anhtuan", avatar: "avatar_anhtuan.png" },
-        { id: 1003, type: "user", name: "Trần Linh Chi", username: "linhchi", avatar: "avatar_linhchi.png" },
-      ].filter((u) => u.id !== userId);
+      // Fetch các users thực tế từ API /api/chat/users mới tạo
+      const usersRes = await fetch("/api/chat/users");
+      const usersData = await usersRes.json();
 
       const formattedGroups = (groupsData.groups || []).map((g: any) => ({
         id: g.id,
         type: "group",
         name: g.name,
-        avatar: g.avatarFilename,
-        lastMessage: g.description || "Nhóm mới tạo",
+        avatar: g.avatarFilename || "group_default.png",
+        lastMessage: g.description || "Nhóm trò chuyện",
       }));
 
-      setConversations([...formattedGroups, ...mockUsers]);
+      const dbUsers = usersData.users || [];
+      setAllSystemUsers(dbUsers); // Lưu lại để hiển thị trong danh sách chọn thành viên nhóm
+
+      setConversations([...formattedGroups, ...dbUsers]);
     } catch (e) {
-      console.error(e);
+      console.error("Load conversations error:", e);
     }
   };
 
@@ -73,11 +90,10 @@ export default function ChatPage() {
       .catch(() => setLoading(false));
   }, [activeChat]);
 
-  // 4. Kết nối Supabase Realtime để lắng nghe tin nhắn mới tức thời!
+  // 4. Kết nối Supabase Realtime để lắng nghe tin nhắn mới
   useEffect(() => {
     if (!currentUser) return;
 
-    // Lắng nghe sự kiện INSERT trên bảng "messages"
     const channel = supabase
       .channel("public:messages")
       .on(
@@ -86,7 +102,6 @@ export default function ChatPage() {
         (payload) => {
           const newMsg = payload.new;
 
-          // Kiểm tra xem tin nhắn này có thuộc hội thoại đang mở hay không
           if (activeChat) {
             const isFromActiveUser = 
               activeChat.type === "user" && 
@@ -99,7 +114,6 @@ export default function ChatPage() {
               newMsg.receiver_id === activeChat.id;
 
             if (isFromActiveUser || isFromActiveGroup) {
-              // Format lại key từ snake_case của Postgres sang camelCase của Prisma
               const formattedMsg = {
                 id: newMsg.id,
                 senderId: newMsg.sender_id,
@@ -156,78 +170,160 @@ export default function ChatPage() {
     }
   };
 
+  // 6. Xử lý click tạo nhóm chat
+  const handleCreateGroupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupName.trim()) return;
+
+    try {
+      const res = await fetch("/api/chat/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: groupName,
+          description: groupDesc,
+          memberIds: selectedMembers,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Reset form
+        setGroupName("");
+        setGroupDesc("");
+        setSelectedMembers([]);
+        setShowCreateGroupModal(false);
+        // Refresh conversations
+        if (currentUser) {
+          loadConversations(currentUser.id);
+        }
+        // Tự chọn nhóm mới tạo làm chat hoạt động
+        setActiveChat({
+          id: data.group.id,
+          type: "group",
+          name: data.group.name,
+          avatar: data.group.avatarFilename,
+        });
+      }
+    } catch (e) {
+      console.error("Tạo nhóm lỗi:", e);
+    }
+  };
+
+  const handleSelectMember = (userId: number) => {
+    if (selectedMembers.includes(userId)) {
+      setSelectedMembers(selectedMembers.filter((id) => id !== userId));
+    } else {
+      setSelectedMembers([...selectedMembers, userId]);
+    }
+  };
+
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl overflow-hidden shadow-premium h-[75vh] flex">
-      {/* Sidebar - Conversations list */}
-      <div className="w-80 border-r border-[var(--card-border)] flex flex-col shrink-0">
-        <div className="p-4 border-b border-[var(--card-border)]">
-          <h2 className="font-extrabold text-lg">Trò chuyện</h2>
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl overflow-hidden shadow-premium h-[78vh] flex relative">
+      
+      {/* 1. Sidebar - Conversations list */}
+      <div className={`border-r border-[var(--card-border)] flex flex-col shrink-0 transition-all duration-300 ${
+        activeChat ? "hidden md:flex w-80" : "w-full md:w-80"
+      }`}>
+        <div className="p-4 border-b border-[var(--card-border)] flex items-center justify-between">
+          <h2 className="font-extrabold text-lg flex items-center gap-2">
+            <MessageSquare className="w-5.5 h-5.5 text-primary" />
+            Trò chuyện
+          </h2>
+          {/* Nút tạo nhóm chat */}
+          <button
+            onClick={() => setShowCreateGroupModal(true)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-primary transition-all active:scale-95"
+            title="Tạo nhóm chat mới"
+          >
+            <PlusCircle className="w-5 h-5" />
+          </button>
         </div>
+
+        {/* Danh sách các cuộc trò chuyện */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {conversations.map((chat) => (
-            <div
-              key={`${chat.type}-${chat.id}`}
-              onClick={() => setActiveChat(chat)}
-              className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${
-                activeChat && activeChat.id === chat.id && activeChat.type === chat.type
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-gray-100 dark:hover:bg-[#202024]"
-              }`}
-            >
-              <div className="relative">
-                <img
-                  src={`/uploads/avatars/${chat.avatar}`}
-                  alt={chat.name}
-                  className="w-11 h-11 rounded-xl object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
-                  }}
-                />
-                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-accent-green border-2 border-[var(--card-bg)] rounded-full" />
-              </div>
-              <div className="overflow-hidden flex-1">
-                <div className="flex justify-between items-center mb-0.5">
-                  <h4 className="font-bold text-xs truncate text-gray-800 dark:text-gray-200">{chat.name}</h4>
+          {conversations.length > 0 ? (
+            conversations.map((chat) => (
+              <div
+                key={`${chat.type}-${chat.id}`}
+                onClick={() => setActiveChat(chat)}
+                className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-colors ${
+                  activeChat && activeChat.id === chat.id && activeChat.type === chat.type
+                    ? "bg-primary/10 text-primary"
+                    : "hover:bg-gray-100 dark:hover:bg-[#202024]"
+                }`}
+              >
+                <div className="relative shrink-0">
+                  <img
+                    src={`/uploads/avatars/${chat.avatar}`}
+                    alt={chat.name}
+                    className="w-11 h-11 rounded-xl object-cover ring-2 ring-gray-100/50"
+                    onError={(e) => {
+                      e.currentTarget.src = chat.type === "group" ? "/assets/images/icons/icon-192x192.png" : "/assets/images/icons/icon-192x192.png";
+                    }}
+                  />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-accent-green border-2 border-[var(--card-bg)] rounded-full" />
                 </div>
-                <p className="text-[10px] text-gray-400 font-medium truncate uppercase">
-                  {chat.type === "group" ? "Nhóm chat" : "Cá nhân"}
-                </p>
+                <div className="overflow-hidden flex-1">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <h4 className="font-bold text-xs truncate text-gray-800 dark:text-gray-200">{chat.name}</h4>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-medium truncate uppercase tracking-wider">
+                    {chat.type === "group" ? "👥 Nhóm chat" : "👤 Cá nhân"}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-center text-xs text-gray-400 font-semibold py-8">Chưa có hội thoại nào.</p>
+          )}
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col justify-between bg-gray-50/50 dark:bg-[#131316]">
+      {/* 2. Main Chat Area */}
+      <div className={`flex-1 flex flex-col justify-between bg-gray-50/50 dark:bg-[#131316] transition-all duration-300 ${
+        activeChat ? "flex" : "hidden md:flex"
+      }`}>
         {activeChat ? (
           <>
             {/* Active chat header */}
-            <div className="px-6 py-3 bg-[var(--card-bg)] border-b border-[var(--card-border)] flex items-center justify-between z-10">
-              <div className="flex items-center gap-3">
+            <div className="px-5 py-3 bg-[var(--card-bg)] border-b border-[var(--card-border)] flex items-center justify-between z-10">
+              <div className="flex items-center gap-3 overflow-hidden">
+                {/* Nút quay lại dành cho mobile */}
+                <button
+                  onClick={() => setActiveChat(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 block md:hidden transition-colors mr-1"
+                  title="Quay lại"
+                >
+                  <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                </button>
+
                 <img
                   src={`/uploads/avatars/${activeChat.avatar}`}
                   alt={activeChat.name}
                   className="w-10 h-10 rounded-xl object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
+                  }}
                 />
-                <div>
-                  <h3 className="font-extrabold text-sm">{activeChat.name}</h3>
-                  <span className="text-[10px] text-accent-green font-bold flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-ping" />
-                    Đang hoạt động
+                <div className="overflow-hidden">
+                  <h3 className="font-extrabold text-sm truncate text-gray-800 dark:text-gray-200">{activeChat.name}</h3>
+                  <span className="text-[9.5px] text-accent-green font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-green animate-pulse" />
+                    Hoạt động
                   </span>
                 </div>
               </div>
 
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400"><Phone className="w-4.5 h-4.5" /></button>
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400"><Video className="w-4.5 h-4.5" /></button>
+              <div className="flex gap-1 shrink-0">
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 hidden sm:block"><Phone className="w-4.5 h-4.5" /></button>
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 hidden sm:block"><Video className="w-4.5 h-4.5" /></button>
                 <button className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400"><MoreVertical className="w-4.5 h-4.5" /></button>
               </div>
             </div>
 
             {/* Messages box */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
@@ -236,23 +332,26 @@ export default function ChatPage() {
                 messages.map((msg) => {
                   const isMine = msg.senderId === currentUser.id;
                   return (
-                    <div key={msg.id} className={`flex gap-3 max-w-[70%] ${isMine ? "ml-auto flex-row-reverse" : ""}`}>
+                    <div key={msg.id} className={`flex gap-3 max-w-[85%] sm:max-w-[70%] ${isMine ? "ml-auto flex-row-reverse" : ""}`}>
                       {!isMine && (
                         <img
                           src={`/uploads/avatars/${activeChat.avatar}`}
                           alt="Sender avatar"
-                          className="w-8 h-8 rounded-lg object-cover shrink-0"
+                          className="w-8 h-8 rounded-lg object-cover shrink-0 ring-1 ring-gray-100"
+                          onError={(e) => {
+                            e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
+                          }}
                         />
                       )}
                       <div className="space-y-1">
-                        <div className={`p-3 rounded-2xl text-xs font-medium leading-relaxed ${
+                        <div className={`p-3 rounded-2xl text-xs font-medium leading-relaxed whitespace-pre-wrap ${
                           isMine
-                            ? "bg-primary text-white rounded-tr-none shadow-md"
+                            ? "bg-primary text-white rounded-tr-none shadow-sm"
                             : "bg-[var(--card-bg)] text-gray-800 dark:text-gray-200 border border-[var(--card-border)] rounded-tl-none"
                         }`}>
                           {msg.messageText}
                         </div>
-                        <p className={`text-[8.5px] text-gray-400 font-medium ${isMine ? "text-right" : ""}`}>
+                        <p className={`text-[8px] text-gray-400 font-bold ${isMine ? "text-right" : ""}`}>
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           {isMine && msg.isRead && " • Đã đọc"}
                         </p>
@@ -262,7 +361,7 @@ export default function ChatPage() {
                 })
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
-                  <MessageSquare className="w-8 h-8 opacity-40" />
+                  <MessageSquare className="w-8 h-8 opacity-40 text-primary" />
                   <p className="text-xs font-semibold">Chưa có tin nhắn nào. Bắt đầu ngay!</p>
                 </div>
               )}
@@ -274,15 +373,9 @@ export default function ChatPage() {
               <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
                 <button
                   type="button"
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 transition-colors"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 transition-colors shrink-0"
                 >
                   <Image className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
                 </button>
                 <input
                   type="text"
@@ -301,7 +394,7 @@ export default function ChatPage() {
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3 p-6">
             <div className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary">
               <MessageSquare className="w-8 h-8" />
             </div>
@@ -312,6 +405,121 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* 3. Modal tạo nhóm chat mới */}
+      {showCreateGroupModal && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--card-bg)] border border-[var(--card-border)] w-full max-w-md rounded-3xl p-6 shadow-premium space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Tạo nhóm chat mới
+              </h3>
+              <button
+                onClick={() => setShowCreateGroupModal(false)}
+                className="p-1.5 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateGroupSubmit} className="space-y-4">
+              {/* Tên nhóm */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Tên nhóm chat *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập tên nhóm..."
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-xl focus:outline-none focus:border-primary transition-all font-medium"
+                />
+              </div>
+
+              {/* Mô tả nhóm */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  Mô tả (Không bắt buộc)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Mô tả mục đích nhóm..."
+                  value={groupDesc}
+                  onChange={(e) => setGroupDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-xl focus:outline-none focus:border-primary transition-all font-medium"
+                />
+              </div>
+
+              {/* Chọn thành viên */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                  Chọn thành viên ({selectedMembers.length})
+                </label>
+                <div className="max-h-36 overflow-y-auto border border-[var(--card-border)] rounded-2xl p-2 space-y-1 bg-gray-50/50 dark:bg-[#18181c]/50">
+                  {allSystemUsers.length > 0 ? (
+                    allSystemUsers.map((u) => {
+                      const isSelected = selectedMembers.includes(u.id);
+                      return (
+                        <div
+                          key={u.id}
+                          onClick={() => handleSelectMember(u.id)}
+                          className={`flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs transition-colors ${
+                            isSelected 
+                              ? "bg-primary/10 text-primary font-bold" 
+                              : "hover:bg-gray-100 dark:hover:bg-[#202024] text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <img
+                              src={`/uploads/avatars/${u.avatar}`}
+                              alt={u.name}
+                              className="w-7 h-7 rounded-lg object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
+                              }}
+                            />
+                            <span className="truncate">{u.name}</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // Handle click bằng parent div
+                            className="rounded text-primary focus:ring-primary h-3.5 w-3.5"
+                          />
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-center text-[10px] text-gray-400 py-4">Không có thành viên nào.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit buttons */}
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateGroupModal(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-[#202024] dark:hover:bg-[#2a2a30] text-gray-500 rounded-xl text-xs font-bold transition-all"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={!groupName.trim()}
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold transition-all shadow-md disabled:opacity-50"
+                >
+                  Tạo nhóm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import useSWR from "swr";
 import { 
   Home, 
   MessageSquare, 
@@ -13,6 +14,8 @@ import {
   Compass,
   Bell
 } from "lucide-react";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface SidebarProps {
   currentUser?: {
@@ -27,11 +30,27 @@ export default function Sidebar({ currentUser, isAdmin }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Lấy danh sách thông báo để tính badge động
+  const { data: notificationsData } = useSWR(
+    currentUser ? "/api/notifications" : null,
+    fetcher,
+    { refreshInterval: 15000 }
+  );
+
+  const unreadNotifications = notificationsData?.notifications?.filter(
+    (n: any) => !n.isRead
+  )?.length || 0;
+
   const menuItems = [
     { name: "Trang chủ", href: "/", icon: Home },
     { name: "Khám phá", href: "/explore", icon: Compass },
-    { name: "Hộp thư", href: "/chat", icon: MessageSquare, badge: 3 },
-    { name: "Thông báo", href: "/notifications", icon: Bell },
+    { name: "Hộp thư", href: "/chat", icon: MessageSquare },
+    { 
+      name: "Thông báo", 
+      href: "/notifications", 
+      icon: Bell, 
+      badge: unreadNotifications 
+    },
     { name: "Dấu trang", href: "/bookmarks", icon: Bookmark },
   ];
 
