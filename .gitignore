@@ -46,3 +46,6 @@ Thumbs.db
 /uploads/stories/*
 !/uploads/avatars/avatar_default.png
 !/uploads/avatars/group_default.png
+
+.vercel
+.env*

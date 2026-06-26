@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/lib/db";
 import PostCard from "@/components/PostCard";
+import AvatarImage from "@/components/AvatarImage";
 import Link from "next/link";
 import ProfileClient from "./ProfileClient"; // Tạo component client-side phụ trợ để xử lý settings & state tabs
 
@@ -123,13 +124,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         {/* User Meta info */}
         <div className="px-6 pb-6 relative flex flex-col md:flex-row items-center md:items-end justify-between -mt-10 gap-4">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
-            <img
+            <AvatarImage
               src={`/uploads/avatars/${profileUser.avatarFilename}`}
               alt={profileUser.fullName}
               className="w-28 h-28 rounded-2xl object-cover border-4 border-[var(--card-bg)] shadow-md z-10"
-              onError={(e) => {
-                e.currentTarget.src = "/assets/images/icons/icon-192x192.png";
-              }}
             />
             <div className="mb-2">
               <div className="flex items-center justify-center md:justify-start gap-1.5">
