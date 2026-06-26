@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
                 username: true,
                 fullName: true,
                 avatarFilename: true,
+                verificationType: true,
               }
             }
           }

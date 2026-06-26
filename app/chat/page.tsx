@@ -129,7 +129,21 @@ export default function ChatPage() {
                 createdAt: newMsg.created_at,
               };
 
-              setMessages((prev) => [...prev, formattedMsg]);
+              setMessages((prev) => {
+                // Tránh trùng lặp tin nhắn nếu tin nhắn này đã tồn tại trong danh sách (do API POST trả về đã cập nhật ID thực trước đó)
+                const exists = prev.some((m) => m.id === formattedMsg.id);
+                if (exists) return prev;
+
+                // Nếu là tin nhắn của chính mình và trong list vẫn còn tin nhắn tạm optimistic
+                if (formattedMsg.senderId === currentUser.id) {
+                  const withoutTemp = prev.filter(
+                    (m) => !(m.isOptimistic && m.messageText === formattedMsg.messageText)
+                  );
+                  return [...withoutTemp, formattedMsg];
+                }
+
+                return [...prev, formattedMsg];
+              });
             }
           }
         }
@@ -146,13 +160,30 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 5. Gửi tin nhắn mới
+  // 5. Gửi tin nhắn mới với Optimistic Updates
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || !activeChat) return;
 
     const text = inputText;
     setInputText("");
+
+    // Tạo tin nhắn tạm thời
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = {
+      id: tempId,
+      senderId: currentUser.id,
+      receiverId: activeChat.id,
+      receiverType: activeChat.type,
+      messageText: text,
+      mediaFilename: null,
+      mediaType: null,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
       const res = await fetch("/api/chat/messages", {
@@ -165,20 +196,65 @@ export default function ChatPage() {
         }),
       });
 
-      if (!res.ok) {
+      if (res.ok) {
+        const result = await res.json();
+        // Thay thế tin nhắn tạm bằng tin nhắn thực tế có ID từ DB
+        if (result.data) {
+          const dbMsg = {
+            id: result.data.id,
+            senderId: result.data.senderId,
+            receiverId: result.data.receiverId,
+            receiverType: result.data.receiverType,
+            messageText: result.data.messageText,
+            mediaFilename: result.data.mediaFilename,
+            mediaType: result.data.mediaType,
+            isRead: result.data.isRead,
+            createdAt: result.data.createdAt,
+          };
+          setMessages((prev) => 
+            prev.map((m) => (m.id === tempId ? dbMsg : m))
+          );
+        }
+      } else {
         console.error("Gửi tin nhắn thất bại");
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        alert("Không thể gửi tin nhắn. Vui lòng thử lại.");
+        setInputText(text); // Phục hồi text
       }
     } catch (e) {
       console.error(e);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      alert("Đã xảy ra lỗi kết nối. Vui lòng thử lại.");
+      setInputText(text); // Phục hồi text
     }
   };
 
-  // Upload file trong chat trực tiếp lên R2
+  // Upload file trong chat trực tiếp lên R2 kèm Optimistic Updates
   const handleChatFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeChat) return;
 
     setChatUploading(true);
+
+    const isVideo = file.type.startsWith("video");
+    const tempId = `temp-media-${Date.now()}`;
+    
+    // Thêm tin nhắn tạm thông báo đang tải lên
+    const optimisticMsg = {
+      id: tempId,
+      senderId: currentUser.id,
+      receiverId: activeChat.id,
+      receiverType: activeChat.type,
+      messageText: `[Đang tải lên ${isVideo ? "video" : "hình ảnh"}...]`,
+      mediaFilename: null,
+      mediaType: null,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+    
+    setMessages((prev) => [...prev, optimisticMsg]);
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -190,10 +266,9 @@ export default function ChatPage() {
 
       if (res.ok) {
         const data = await res.json();
-        const isVideo = file.type.startsWith("video");
         
         // Gửi tin nhắn chứa media
-        await fetch("/api/chat/messages", {
+        const msgRes = await fetch("/api/chat/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -204,14 +279,45 @@ export default function ChatPage() {
             mediaType: isVideo ? "video" : "image",
           }),
         });
+
+        if (msgRes.ok) {
+          const result = await msgRes.json();
+          if (result.data) {
+            const dbMsg = {
+              id: result.data.id,
+              senderId: result.data.senderId,
+              receiverId: result.data.receiverId,
+              receiverType: result.data.receiverType,
+              messageText: result.data.messageText,
+              mediaFilename: result.data.mediaFilename,
+              mediaType: result.data.mediaType,
+              isRead: result.data.isRead,
+              createdAt: result.data.createdAt,
+            };
+            // Thay thế tin nhắn đang tải lên bằng tin nhắn chứa media thực tế
+            setMessages((prev) =>
+              prev.map((m) => (m.id === tempId ? dbMsg : m))
+            );
+          }
+        } else {
+          setMessages((prev) => prev.filter((m) => m.id !== tempId));
+          alert("Gửi tin nhắn chứa tệp thất bại.");
+        }
       } else {
-        alert("Lỗi tải tệp tin lên Cloudflare R2.");
+        const errData = await res.json();
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        alert(errData.error || "Lỗi tải tệp tin lên Cloudflare R2.");
       }
     } catch (err) {
       console.error(err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       alert("Không thể kết nối máy chủ để tải tệp.");
     } finally {
       setChatUploading(false);
+      // Reset input file để có thể chọn lại cùng 1 file nếu muốn
+      if (chatFileInputRef.current) {
+        chatFileInputRef.current.value = "";
+      }
     }
   };
 

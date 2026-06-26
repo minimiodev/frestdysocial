@@ -132,8 +132,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="mb-2">
               <div className="flex items-center justify-center md:justify-start gap-1.5">
                 <h2 className="text-xl font-extrabold">{profileUser.fullName}</h2>
-                {profileUser.verificationType && (
-                  <span className="text-primary font-extrabold text-sm">✓</span>
+                {profileUser.verificationType === "official" && (
+                  <svg className="w-5 h-5 inline-block shrink-0" viewBox="0 0 24 24" title="Đã xác minh">
+                    <g fillRule="evenodd" transform="translate(-92)">
+                      <path fill="#1877f2" d="m115.887 14.475-1.269-2.475 1.267-2.474a1.02 1.02 0 0 0-.355-1.326l-2.334-1.51-.14-2.775a1.018 1.018 0 0 0-.97-.971l-2.778-.14-1.51-2.336a1.02 1.02 0 0 0-1.324-.354L104 1.38 101.526.114a1.02 1.02 0 0 0-1.326.354l-1.509 2.336-2.777.14a1.017 1.017 0 0 0-.97.97l-.14 2.777L92.468 8.2a1.02 1.02 0 0 0-.354 1.325L93.382 12l-1.268 2.474a1.02 1.02 0 0 0 .355 1.326l2.335 1.509.14 2.776c.025.528.443.945.97.971l2.777.14 1.51 2.336a1.02 1.02 0 0 0 1.324.354L104 22.62l2.474 1.267c.469.242 1.039.09 1.326-.355l1.51-2.335 2.776-.14c.527-.026.945-.443.97-.97l.14-2.777 2.336-1.51c.443-.286.595-.856.354-1.324" />
+                      <path fill="#ffffff" d="m109.207 9.707-6.5 6.5a.996.996 0 0 1-1.414 0l-3-3a1 1 0 1 1 1.414-1.414L102 14.086l5.793-5.793a1 1 0 1 1 1.414 1.414" />
+                    </g>
+                  </svg>
+                )}
+                {profileUser.verificationType === "subscribed" && (
+                  <svg className="w-5 h-5 text-amber-500 fill-current inline-block shrink-0" viewBox="0 0 24 24" title="Frest Subscribed">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z" />
+                  </svg>
+                )}
+                {profileUser.verificationType === "developer" && (
+                  <span className="text-[10px] bg-purple-500/10 text-purple-500 border border-purple-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5" title="Nhà phát triển">
+                    ⚙ Dev
+                  </span>
+                )}
+                {profileUser.verificationType === "business" && (
+                  <span className="text-[10px] bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-0.5 rounded-full font-bold flex items-center gap-0.5" title="Doanh nghiệp">
+                    💼 Biz
+                  </span>
                 )}
               </div>
               <p className="text-xs text-gray-400 font-medium">@{profileUser.username}</p>

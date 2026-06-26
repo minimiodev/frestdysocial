@@ -18,24 +18,34 @@ export async function GET(req: NextRequest) {
       name: user.fullName || user.username,
       avatar: user.avatarFilename,
       username: user.username,
+      verificationType: user.verificationType,
     };
 
     const identityCookie = req.cookies.get("frest_identity")?.value;
     if (identityCookie) {
       try {
-        const parsed = JSON.parse(identityCookie);
-        if (parsed.type === "page") {
-          // Lấy thông tin page xem có đúng user sở hữu không
-          // Chú ý: Ở schema.prisma, chúng ta có thể định nghĩa bảng Page nếu cần,
-          // Hoặc kiểm tra cơ sở dữ liệu. Nhưng để đơn giản và linh hoạt, chúng ta
-          // có thể truy vấn bảng posts/pages hoặc mô phỏng trực tiếp từ DB.
-          // Trong database MySQL gốc có table `pages` (xem db_init.php dòng 25).
-          // Nhưng ở schema.prisma ở bước trước tôi đã bỏ qua bảng `Page` (nhưng posts có liên kết)
-          // Để tôi kiểm tra xem có bảng `pages` trong db_init.php không. Có!
-          // Hãy bổ sung bảng Page vào schema.prisma nếu cần, hoặc xử lý trực tiếp.
-          // Để an toàn, hãy xem thông tin page trong db_init.php.
+        const parsed = JSON.parse(decodeURIComponent(identityCookie));
+        if (parsed.type === "page" && parsed.id) {
+          const page = await db.page.findFirst({
+            where: {
+              id: parseInt(parsed.id),
+              ownerId: user.id,
+            },
+          });
+          if (page) {
+            identity = {
+              type: "page",
+              id: page.id,
+              name: page.pageName,
+              avatar: page.avatarFilename,
+              username: page.pageUsername,
+              verificationType: page.isVerified ? "official" : null,
+            };
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Lỗi phân tích active identity:", e);
+      }
     }
 
     // Cập nhật trạng thái hoạt động cuối cùng của người dùng
@@ -56,6 +66,7 @@ export async function GET(req: NextRequest) {
         isPrivate: user.isPrivate,
         showNsfw: user.showNsfw,
         ageVerificationStatus: user.ageVerificationStatus,
+        verificationType: user.verificationType,
       },
       identity,
     });

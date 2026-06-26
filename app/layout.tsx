@@ -67,6 +67,7 @@ export default async function RootLayout({
           name: currentUser.fullName || currentUser.username,
           avatar: currentUser.avatarFilename,
           username: currentUser.username,
+          verificationType: currentUser.verificationType,
         };
 
         // Đọc cookie identity đã lưu nếu có để đổi vai trò hoạt động
@@ -74,7 +75,7 @@ export default async function RootLayout({
         if (identityCookie) {
           try {
             const parsed = JSON.parse(decodeURIComponent(identityCookie));
-            if (parsed.type === "page") {
+            if (parsed.type === "page" && parsed.id) {
               const matchedPage = myPages.find((p) => p.id === parsed.id);
               if (matchedPage) {
                 currentIdentity = {
@@ -83,6 +84,7 @@ export default async function RootLayout({
                   name: matchedPage.pageName,
                   avatar: matchedPage.avatarFilename,
                   username: matchedPage.pageUsername,
+                  verificationType: matchedPage.isVerified ? "official" : null,
                 };
               }
             }

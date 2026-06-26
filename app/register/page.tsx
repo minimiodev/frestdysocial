@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkles, Mail, Lock, User, AlertCircle, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -41,125 +40,80 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl p-8 shadow-premium space-y-6 relative overflow-hidden">
-        {/* Decorative Blur Backgrounds */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-accent-purple/10 rounded-full blur-3xl" />
-
-        {/* Branding header */}
-        <div className="text-center space-y-2 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-accent-purple flex items-center justify-center mx-auto shadow-premium">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <h2 className="text-2xl font-black bg-gradient-to-r from-primary to-accent-purple bg-clip-text text-transparent">
+    <div className="min-h-[75vh] flex items-center justify-center p-4">
+      <div className="w-full max-w-[400px] bg-[var(--card-bg)] border border-[var(--card-border)] rounded-3xl p-6 sm:p-8 shadow-premium space-y-6">
+        
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
             Tạo tài khoản mới
           </h2>
-          <p className="text-xs text-gray-400 font-medium">Bắt đầu kết nối cùng Frest ngay hôm nay</p>
         </div>
 
         {/* Error notification */}
         {error && (
-          <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-accent-pink text-xs font-semibold animate-shake">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <span>{error}</span>
+          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-accent-pink text-xs font-semibold text-center animate-shake">
+            {error}
           </div>
         )}
 
         {/* Form register */}
-        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Tên tài khoản (username)
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <User className="h-4.5 w-4.5 text-gray-400" />
-              </span>
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="hoangdung"
-                className="w-full pl-12 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Họ và tên đầy đủ
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <User className="h-4.5 w-4.5 text-gray-400" />
-              </span>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nguyễn Hoàng Dũng"
-                className="w-full pl-12 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Địa chỉ Email
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Mail className="h-4.5 w-4.5 text-gray-400" />
-              </span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="dung@frest.local"
-                className="w-full pl-12 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-              Mật khẩu
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Lock className="h-4.5 w-4.5 text-gray-400" />
-              </span>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
-                className="w-full pl-12 pr-4 py-2.5 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-3">
+            <input
+              type="text"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Tên tài khoản (username)"
+              className="w-full px-4 py-3.5 text-sm bg-transparent border border-gray-300 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2] transition-all font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400"
+            />
+            <input
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Họ và tên đầy đủ"
+              className="w-full px-4 py-3.5 text-sm bg-transparent border border-gray-300 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2] transition-all font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400"
+            />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full px-4 py-3.5 text-sm bg-transparent border border-gray-300 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2] transition-all font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400"
+            />
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mật khẩu"
+              className="w-full px-4 py-3.5 text-sm bg-transparent border border-gray-300 dark:border-gray-700 rounded-2xl focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2] transition-all font-medium text-gray-800 dark:text-gray-100 placeholder-gray-400"
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white rounded-2xl font-bold text-sm shadow-premium hover:shadow-lg transition-all active:scale-98 flex items-center justify-center gap-2 group disabled:opacity-50"
+            className="w-full py-3.5 bg-[#1877f2] hover:bg-[#1565c0] active:scale-[0.99] text-white rounded-full font-bold text-sm transition-all disabled:opacity-50 shadow-md"
           >
-            <span>{loading ? "Đang tạo tài khoản..." : "Đăng ký tài khoản"}</span>
-            {!loading && <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
+            {loading ? "Đang tạo tài khoản..." : "Đăng ký"}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-500 font-semibold relative z-10">
-          Đã có tài khoản?{" "}
-          <Link href="/login" className="text-primary font-bold hover:underline">
+        <div className="text-center space-y-4">
+          <div className="border-t border-[var(--card-border)] w-full" />
+
+          <Link
+            href="/login"
+            className="inline-block w-full py-3.5 border border-[#1877f2] hover:bg-[#1877f2]/5 text-[#1877f2] rounded-full font-bold text-sm text-center transition-all active:scale-[0.99]"
+          >
             Đăng nhập ngay
           </Link>
-        </p>
+        </div>
+
       </div>
     </div>
   );

@@ -15,12 +15,13 @@ export async function POST(req: NextRequest) {
 
     const cleanInput = usernameOrEmail.trim().toLowerCase();
 
-    // Tìm user theo username hoặc email
+    // Tìm user theo username hoặc email hoặc số điện thoại
     const user = await db.user.findFirst({
       where: {
         OR: [
           { username: cleanInput },
           { email: cleanInput },
+          { phoneNumber: cleanInput },
         ],
       },
     });

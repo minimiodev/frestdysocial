@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Plus, X, Heart, Eye } from "lucide-react";
 
 interface StoryItem {
@@ -37,6 +37,39 @@ export default function StoryTray({ groupedStories = [], currentUserId, onRefres
   const [uploading, setUploading] = useState(false);
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [mediaType, setMediaType] = useState("image");
+
+  const storyFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Xử lý tải file trực tiếp lên R2
+  const handleStoryFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setUploadedUrl(data.url);
+        setMediaType(file.type.startsWith("video") ? "video" : "image");
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Lỗi tải tệp tin lên R2.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Không thể kết nối máy chủ để tải tệp.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Xử lý tạo story mới
   const handleCreateStory = async (e: React.FormEvent) => {
@@ -233,14 +266,24 @@ export default function StoryTray({ groupedStories = [], currentUserId, onRefres
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               {groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaType === "video" ? (
                 <video
-                  src={`/uploads/stories/${groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename}`}
+                  src={
+                    groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename.startsWith("http")
+                      ? groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename
+                      : `/uploads/stories/${groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename}`
+                  }
                   autoPlay
+                  playsInline
+                  onEnded={handleNextStory}
                   controls={false}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <img
-                  src={`/uploads/stories/${groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename}`}
+                  src={
+                    groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename.startsWith("http")
+                      ? groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename
+                      : `/uploads/stories/${groupedStories[activeGroupIndex].stories[activeStoryIndex].mediaFilename}`
+                  }
                   alt="Story Content"
                   className="w-full h-full object-cover"
                 />
@@ -302,46 +345,48 @@ export default function StoryTray({ groupedStories = [], currentUserId, onRefres
             <form onSubmit={handleCreateStory} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
-                  Chọn Loại Phương Tiện
+                  Tải Lên Phương Tiện (Hình ảnh/Video) *
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMediaType("image")}
-                    className={`py-2 rounded-xl text-sm font-semibold border ${
-                      mediaType === "image"
-                        ? "bg-primary/5 text-primary border-primary/30"
-                        : "border-gray-200 dark:border-gray-800"
-                    }`}
-                  >
-                    Hình ảnh
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMediaType("video")}
-                    className={`py-2 rounded-xl text-sm font-semibold border ${
-                      mediaType === "video"
-                        ? "bg-primary/5 text-primary border-primary/30"
-                        : "border-gray-200 dark:border-gray-800"
-                    }`}
-                  >
-                    Video
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">
-                  Đường Dẫn Media (R2 / File mẫu)
-                </label>
+                
                 <input
-                  type="text"
-                  placeholder="Ví dụ: story_sunset.jpg"
-                  required
-                  value={uploadedUrl}
-                  onChange={(e) => setUploadedUrl(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[var(--card-border)] bg-gray-50 dark:bg-[#18181c] text-sm focus:outline-none focus:border-primary"
+                  type="file"
+                  ref={storyFileInputRef}
+                  onChange={handleStoryFileChange}
+                  accept="image/*,video/*"
+                  className="hidden"
                 />
+
+                {uploadedUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-[var(--card-border)] bg-black/90 dark:bg-black/95 max-h-[220px] flex items-center justify-center aspect-[9/16] mx-auto shadow-inner group">
+                    {mediaType === "video" ? (
+                      <video src={uploadedUrl} controls className="w-full h-full object-contain" />
+                    ) : (
+                      <img src={uploadedUrl} alt="Story Preview" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadedUrl("");
+                        if (storyFileInputRef.current) storyFileInputRef.current.value = "";
+                      }}
+                      className="absolute top-3 right-3 w-8 h-8 bg-black/70 hover:bg-black/90 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md transition-all active:scale-90"
+                      title="Chọn tệp khác"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => storyFileInputRef.current?.click()}
+                    className="w-full py-8 border-2 border-dashed border-[var(--card-border)] hover:border-primary/50 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer bg-gray-50/50 dark:bg-[#18181c]/50 hover:bg-gray-100/50 dark:hover:bg-[#1c1c20]/50 transition-colors"
+                  >
+                    <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                      <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-gray-600 dark:text-gray-400">Nhấp để chọn ảnh hoặc video</span>
+                    <span className="text-[10px] text-gray-400 font-medium">Hỗ trợ tối đa 50MB</span>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -359,7 +404,7 @@ export default function StoryTray({ groupedStories = [], currentUserId, onRefres
 
               <button
                 type="submit"
-                disabled={uploading}
+                disabled={uploading || !uploadedUrl}
                 className="w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-premium transition-all disabled:opacity-50"
               >
                 {uploading ? "Đang xử lý..." : "Chia sẻ ngay"}

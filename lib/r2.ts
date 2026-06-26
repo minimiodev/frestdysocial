@@ -10,7 +10,7 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME || "frest-storage";
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || "frestdy";
 const PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
 
 /**

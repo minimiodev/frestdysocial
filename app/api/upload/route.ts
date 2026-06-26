@@ -4,6 +4,15 @@ import { uploadToR2 } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
+// Tăng giới hạn body size lên 50MB cho route này
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: "50mb",
+    sizeLimit: "50mb",
+  },
+};
+
 export async function POST(req: NextRequest) {
   try {
     // 1. Xác thực người dùng
@@ -20,10 +29,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Không tìm thấy tệp tin nào." }, { status: 400 });
     }
 
-    // Giới hạn dung lượng tệp tin (ví dụ: 10MB)
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    // Giới hạn dung lượng tệp tin (50MB)
+    const MAX_SIZE = 50 * 1024 * 1024; // 50MB
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "Tệp tin vượt quá giới hạn 10MB." }, { status: 400 });
+      return NextResponse.json({ error: "Tệp tin vượt quá giới hạn 50MB." }, { status: 400 });
     }
 
     // 3. Đọc dữ liệu Buffer của file
@@ -50,7 +59,25 @@ export async function POST(req: NextRequest) {
     }, { status: 200 });
 
   } catch (error: any) {
-    console.error("Upload Media Error:", error);
-    return NextResponse.json({ error: "Lỗi tải tệp tin lên Cloudflare R2." }, { status: 500 });
+    // Log chi tiết lỗi để debug
+    console.error("[Upload API] Error:", {
+      message: error?.message,
+      name: error?.name,
+      code: error?.code,
+      stack: error?.stack?.substring(0, 500),
+    });
+
+    // Xử lý các lỗi phổ biến
+    if (error?.code === "NoSuchBucket") {
+      return NextResponse.json({ error: "Bucket R2 không tồn tại. Vui lòng kiểm tra cấu hình R2_BUCKET_NAME." }, { status: 500 });
+    }
+    if (error?.code === "InvalidAccessKeyId" || error?.code === "SignatureDoesNotMatch") {
+      return NextResponse.json({ error: "Thông tin xác thực R2 không hợp lệ. Vui lòng kiểm tra R2_ACCESS_KEY_ID và R2_SECRET_ACCESS_KEY." }, { status: 500 });
+    }
+    if (error?.message?.includes("fetch failed") || error?.message?.includes("ECONNREFUSED")) {
+      return NextResponse.json({ error: "Không thể kết nối đến Cloudflare R2. Vui lòng kiểm tra R2_ENDPOINT." }, { status: 500 });
+    }
+
+    return NextResponse.json({ error: `Lỗi tải tệp tin lên Cloudflare R2: ${error?.message || "Unknown error"}` }, { status: 500 });
   }
 }

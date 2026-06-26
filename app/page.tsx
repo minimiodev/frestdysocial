@@ -210,17 +210,31 @@ export default function FeedPage() {
 
             {/* Optional attachments inputs */}
             {(imageFile || videoFile) && (
-              <div className="p-3 bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl space-y-2 text-xs">
+              <div className="p-4 bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl space-y-3">
                 {imageFile && (
-                  <div className="flex justify-between items-center">
-                    <span className="truncate max-w-[280px]">🖼️ Ảnh: {imageFile}</span>
-                    <button type="button" className="text-accent-pink font-bold" onClick={() => setImageFile("")}>Xóa</button>
+                  <div className="relative rounded-xl overflow-hidden border border-[var(--card-border)] max-w-[200px] shadow-sm group">
+                    <img src={imageFile} alt="Preview" className="w-full h-auto object-cover max-h-[150px]" />
+                    <button
+                      type="button"
+                      onClick={() => setImageFile("")}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-colors"
+                      title="Xóa ảnh"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
                 {videoFile && (
-                  <div className="flex justify-between items-center">
-                    <span className="truncate max-w-[280px]">🎥 Video: {videoFile}</span>
-                    <button type="button" className="text-accent-pink font-bold" onClick={() => setVideoFile("")}>Xóa</button>
+                  <div className="relative rounded-xl overflow-hidden border border-[var(--card-border)] max-w-[280px] bg-black shadow-sm group">
+                    <video src={videoFile} controls className="w-full h-auto max-h-[180px] object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setVideoFile("")}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-colors z-10"
+                      title="Xóa video"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
               </div>
