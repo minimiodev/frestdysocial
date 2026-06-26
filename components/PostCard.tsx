@@ -218,7 +218,7 @@ export default function PostCard({ post, currentUserId, isAdult = false, onRefre
             {post.imageFilename && (
               <div className="rounded-2xl overflow-hidden border border-[var(--card-border)] bg-black/5 dark:bg-white/5">
                 <img
-                  src={`/uploads/posts/${post.imageFilename}`}
+                  src={post.imageFilename.startsWith("http") ? post.imageFilename : `/uploads/posts/${post.imageFilename}`}
                   alt="Post attachment"
                   className="w-full h-auto max-h-[480px] object-cover"
                 />
@@ -228,7 +228,7 @@ export default function PostCard({ post, currentUserId, isAdult = false, onRefre
             {post.videoFilename && (
               <div className="rounded-2xl overflow-hidden border border-[var(--card-border)] bg-black relative">
                 <video
-                  src={`/uploads/posts/${post.videoFilename}`}
+                  src={post.videoFilename.startsWith("http") ? post.videoFilename : `/uploads/posts/${post.videoFilename}`}
                   controls
                   className="w-full max-h-[400px] object-contain"
                 />
@@ -240,7 +240,7 @@ export default function PostCard({ post, currentUserId, isAdult = false, onRefre
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                   <Music className="w-5 h-5" />
                 </div>
-                <audio src={`/uploads/posts/${post.audioFilename}`} controls className="flex-1 h-8" />
+                <audio src={post.audioFilename.startsWith("http") ? post.audioFilename : `/uploads/posts/${post.audioFilename}`} controls className="flex-1 h-8" />
               </div>
             )}
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
 import StoryTray from "@/components/StoryTray";
 import PostCard from "@/components/PostCard";
-import { Sparkles, Image, Video, Music, Calendar, Smile, Send, Compass } from "lucide-react";
+import { Sparkles, Image, Video, Music, Calendar, Smile, Send, Compass, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -22,6 +22,43 @@ export default function FeedPage() {
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [posting, setPosting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (type === "image") {
+          setImageFile(data.url);
+        } else {
+          setVideoFile(data.url);
+        }
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Lỗi tải tệp tin lên Cloudflare R2.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Không thể kết nối máy chủ để tải tệp.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Fetch me
   useEffect(() => {
@@ -191,26 +228,38 @@ export default function FeedPage() {
 
             {/* Actions Bar */}
             <div className="flex items-center justify-between border-t border-[var(--card-border)] pt-3">
-              <div className="flex gap-2.5 text-gray-500">
+              <div className="flex gap-2.5 text-gray-500 items-center">
+                {/* File inputs ẩn */}
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  onChange={(e) => handleFileChange(e, "image")}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <input
+                  type="file"
+                  ref={videoInputRef}
+                  onChange={(e) => handleFileChange(e, "video")}
+                  accept="video/*"
+                  className="hidden"
+                />
+
                 <button
                   type="button"
-                  onClick={() => {
-                    const url = prompt("Nhập đường dẫn ảnh từ R2:");
-                    if (url) setImageFile(url);
-                  }}
+                  onClick={() => imageInputRef.current?.click()}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl hover:text-primary transition-colors"
-                  title="Thêm ảnh"
+                  title="Thêm ảnh từ thiết bị"
+                  disabled={uploading}
                 >
                   <Image className="w-5 h-5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const url = prompt("Nhập đường dẫn video từ R2:");
-                    if (url) setVideoFile(url);
-                  }}
+                  onClick={() => videoInputRef.current?.click()}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl hover:text-primary transition-colors"
-                  title="Thêm video"
+                  title="Thêm video từ thiết bị"
+                  disabled={uploading}
                 >
                   <Video className="w-5 h-5" />
                 </button>
@@ -234,12 +283,19 @@ export default function FeedPage() {
                 >
                   NSFW
                 </button>
+
+                {uploading && (
+                  <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1.5 ml-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                    Đang tải lên R2...
+                  </span>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={posting}
-                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-premium flex items-center gap-1.5 transition-all"
+                disabled={posting || uploading}
+                className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-premium flex items-center gap-1.5 transition-all disabled:opacity-50"
               >
                 <span>{posting ? "Đang đăng..." : "Đăng bài"}</span>
                 <Send className="w-3.5 h-3.5" />

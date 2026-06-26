@@ -23,6 +23,9 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+  const [chatUploading, setChatUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // States cho modal tạo nhóm
@@ -167,6 +170,48 @@ export default function ChatPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  // Upload file trong chat trực tiếp lên R2
+  const handleChatFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChat) return;
+
+    setChatUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const isVideo = file.type.startsWith("video");
+        
+        // Gửi tin nhắn chứa media
+        await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            receiverId: activeChat.id,
+            receiverType: activeChat.type,
+            messageText: `[Đã gửi một ${isVideo ? "video" : "hình ảnh"}]`,
+            mediaFilename: data.url,
+            mediaType: isVideo ? "video" : "image",
+          }),
+        });
+      } else {
+        alert("Lỗi tải tệp tin lên Cloudflare R2.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Không thể kết nối máy chủ để tải tệp.");
+    } finally {
+      setChatUploading(false);
     }
   };
 
@@ -344,12 +389,20 @@ export default function ChatPage() {
                         />
                       )}
                       <div className="space-y-1">
-                        <div className={`p-3 rounded-2xl text-xs font-medium leading-relaxed whitespace-pre-wrap ${
+                        <div className={`p-3 rounded-2xl text-xs font-medium leading-relaxed overflow-hidden ${
                           isMine
                             ? "bg-primary text-white rounded-tr-none shadow-sm"
                             : "bg-[var(--card-bg)] text-gray-800 dark:text-gray-200 border border-[var(--card-border)] rounded-tl-none"
                         }`}>
-                          {msg.messageText}
+                          {msg.mediaFilename ? (
+                            msg.mediaType === "video" ? (
+                              <video src={msg.mediaFilename} controls className="max-w-[200px] sm:max-w-[280px] rounded-xl" />
+                            ) : (
+                              <img src={msg.mediaFilename} alt="Media" className="max-w-[200px] sm:max-w-[280px] rounded-xl object-cover" />
+                            )
+                          ) : (
+                            msg.messageText
+                          )}
                         </div>
                         <p className={`text-[8px] text-gray-400 font-bold ${isMine ? "text-right" : ""}`}>
                           {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -371,11 +424,26 @@ export default function ChatPage() {
             {/* Input Message box */}
             <div className="p-4 bg-[var(--card-bg)] border-t border-[var(--card-border)]">
               <form onSubmit={handleSendMessage} className="flex gap-2 items-center">
+                <input
+                  type="file"
+                  ref={chatFileInputRef}
+                  onChange={handleChatFileChange}
+                  accept="image/*,video/*"
+                  className="hidden"
+                />
+                
                 <button
                   type="button"
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 transition-colors shrink-0"
+                  onClick={() => chatFileInputRef.current?.click()}
+                  disabled={chatUploading}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-[#202024] rounded-xl text-gray-400 transition-colors shrink-0 disabled:opacity-50"
+                  title="Gửi hình ảnh/video"
                 >
-                  <Image className="w-5 h-5" />
+                  {chatUploading ? (
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Image className="w-5 h-5" />
+                  )}
                 </button>
                 <input
                   type="text"
