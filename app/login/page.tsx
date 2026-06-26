@@ -80,7 +80,7 @@ export default function LoginPage() {
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 placeholder="hoangdung hoặc hoangdung@frest.local"
-                className="w-full pl-10.5 pr-4 py-3 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
+                className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
               />
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10.5 pr-4 py-3 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
+                className="w-full pl-12 pr-4 py-3 text-sm bg-gray-50 dark:bg-[#18181c] border border-[var(--card-border)] rounded-2xl focus:outline-none focus:border-primary transition-all font-medium"
               />
             </div>
           </div>
